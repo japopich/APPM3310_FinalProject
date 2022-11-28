@@ -1,4 +1,4 @@
-function [state] = KF_accel(t, x_dot_dot, sigma_std, P_n_n)
+function [state] = KF_accel(t, x_dot_dot, sigma_std, P_0_0)
 %{
     Last Edited: Jason Popich 11/27/22
 
@@ -18,17 +18,20 @@ function [state] = KF_accel(t, x_dot_dot, sigma_std, P_n_n)
 %}
 
     %% Set Initial Conditions
-    x_n_n = [0; 0; x_dot_dot(1)];                                           % The estimated system state vector at time step n
+    x_n_n = [0; 0; x_dot_dot(1)];                                   % The estimated system state vector at time step n
     state = x_n_n;
     U_n = [0; 0; 0];                                                % The input variable, measurable deterministic input to the system
 
-    % Preallocate vectors
-    X_n_n_m_1 = zeros(3,1);                                         % The predicated system state vector at time step n-1
-    P_n_n_m_1 = zeros(3,3);                                         % The prior estimate uncertainty (covariance) matrix of the current state (predicted at previous state)
-
+    % Get the DT
+    dt = diff(t);
+    dt = dt(1);
+    
     % Define the A matrix in a State Space model 
     A = [1 dt (1/2)*(dt^2); 0 1 dt; 0 0 1];
-
+        
+    % Define the F matrix (Discrete so equal to A from State Space)
+    F = A;
+    
     % Define Control Matrix
     % NOTE: Zero because no inputs
     % G = [0 0 0; 0 0 0; 0 0 1];
@@ -45,20 +48,16 @@ function [state] = KF_accel(t, x_dot_dot, sigma_std, P_n_n)
     % Define the Measurement Process Noise Matrix, Q_meas
     % NOTE: Only measurement process error is acceleration
     Q_meas = [0 0 0; 0 0 0; 0 0 1]*(sigma_std^2);
+    
+    % Define the Process Noise Matrix, Q
+    Q = F*Q_meas*F';
 
     % Determine the initial uncertainty of a prediction - covariance matrix for the next state
-    % NOTE: Since this is the initial condition, estimate is 1
-    % P_n_n = eye(3,3);
+    P_n_n = P_0_0;
 
     % Calculate velocities and positions using 1D kinematic equations
     for i = 2:length(x_dot_dot)
         %% Time Update
-        
-        % Define the F matrix
-        F = exp(A*(t(i) - t(i-1)));
-        
-        % Define the Process Noise Matrix, Q
-        Q = F*Q_meas*F';
         
         % Extrapolate the state
         x_n_p_1_n = F*x_n_n + G*U_n;
