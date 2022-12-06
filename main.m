@@ -51,9 +51,9 @@ for i = 2:n
     X_k(i) = X_k(i-1) + V_k(i)*dt + (1/2)*x_accel(i)*dt^2;
 end
  
-%% Trapezoidal 
-v_trap = cumtrapz(t, x_accel);
-x_trap = cumtrapz(t, v_trap);
+%% Cumulative Trapezoidal
+V_r = cumtrapz(t, x_accel);
+X_r = cumtrapz(t, V_r);
 
 %% Plots
 
@@ -74,7 +74,7 @@ nexttile
 hold on
 ylabel({'Velocity','$\mathbf{m/s}$'},'interpreter', 'latex');
 plot(t,kf_state(2,:))
-plot(t, v_trap)
+plot(t(1:length(V_r)), V_r)
 plot(t, V_k)
 legend('KF','Trapezoidal', 'Kinematic','Location','eastoutside')
 hold off
@@ -83,17 +83,10 @@ nexttile
 hold on
 ylabel({'Position','$\mathbf{m}$'},'interpreter', 'latex');
 plot(t, kf_state(1,:))
-plot(t, x_trap)
+plot(t(1:length(X_r)), X_r)
 plot(t, X_k)
 legend('KF','Trapezoidal', 'Kinematic','Location','eastoutside')
 hold off
 
 
 %% Functions
-function [derive] = odefun(t,y) 
-
-dv = y(2); 
-dx = .5*dv*t^2;
-
-derive = [dx; dv]; 
-end 
